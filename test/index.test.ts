@@ -8,28 +8,27 @@ let rakkas: ChildProcess;
 
 beforeAll(async () => {
 	rakkas = spawn("npm", ["run", "dev"], {
+		shell: true,
 		stdio: "inherit",
 		cwd: path.resolve(__dirname, ".."),
 	});
 
-	// Wait until port responds
+	// Wait until page renders correctly
 	await new Promise<void>((resolve) => {
 		const interval = setInterval(() => {
 			fetch("http://localhost:3000")
-				.then((r) => {
-					clearInterval(interval);
-					resolve();
+				.then(async (r) => {
+					const text = await r.text();
+					if (r.status === 200 && text.includes("Rakkas Demo App")) {
+						clearInterval(interval);
+						resolve();
+						console.log(await r.text());
+					}
 				})
 				.catch(() => {});
-		}, 100);
+		}, 250);
 	});
-});
-
-test("shows correct title", async () => {
-	const response = await fetch("http://localhost:3000");
-	const text = await response.text();
-	expect(text).toContain("Rakkas Demo App");
-});
+}, 30_000);
 
 test("resolves virtual entry", async () => {
 	const response = await fetch(
